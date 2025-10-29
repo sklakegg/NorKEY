@@ -1,5 +1,5 @@
 # NorKEY-Mac
-The Keyboard Layout for Norwegians coders and translators - Version for Mac OS X.
+A great Mac keyboard Layout for Norwegian coders and translators.
 Norwegian version of [EurKEY-Mac](https://github.com/jonasdiemer/EurKEY-Mac)
 It only includes Æ, Ø and Å of the special symbols in the original layout - making it less error prone to typos for Norwegian users.
 
