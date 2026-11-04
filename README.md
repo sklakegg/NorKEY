@@ -16,20 +16,17 @@ After the restart go to `System Settings` > `Keyboard` > `Edit` > `+` and search
 
 Windows
 =======
-`windows/NorKEY.klc` is a port of the Mac layout. Option maps to AltGr (right Alt). The Caps Lock + Option symbols are not available on Windows.
+`windows/NorKEY.klc` is [EurKEY for Windows](https://eurkey.steffen.bruentjen.eu/) 1.3 with the AltGr (right Alt) symbols reduced to Æ, Ø and Å. AltGr+Space gives a non-breaking space and AltGr+` is a dead key for accents.
 
 Build
 -----
-Windows only loads compiled layouts, so the `.klc` source must be built once:
-
-1. Install [Microsoft Keyboard Layout Creator](https://www.microsoft.com/en-us/download/details.aspx?id=102134).
-2. Open `windows/NorKEY.klc` and choose `Project` > `Build DLL and Setup Package`.
-
-This creates an installer package that can be reused on any Windows PC.
+Windows only loads compiled layouts. To build the installer, open the `Build Windows installer` workflow under `Actions` on GitHub, click `Run workflow`, and download `NorKEY-setup` from the finished run. The workflow compiles `windows/NorKEY.klc` with Microsoft Keyboard Layout Creator and packages it using `windows/NorKEY.iss`.
 
 Install
 -------
-Run `setup.exe` from the built package, then sign out and back in. The layout is installed under Norwegian (Bokmål) as `NorKEY v1.0`. Add it in `Settings` > `Time & language` > `Language & region` if it is not listed.
+Run `NorKEY-setup.exe`. It is not signed, so Windows may warn about it; choose `More info` > `Run anyway`. Then sign out and back in, and add `NorKEY v1.0` under `Settings` > `Time & language` > `Language & region` > `Norwegian` > `Language options` > `Keyboards`.
+
+To uninstall, first remove NorKEY from the keyboards in every Windows account that uses it, then uninstall `NorKEY keyboard layout` under `Settings` > `Apps`.
 
 License
 =======
