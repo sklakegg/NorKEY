@@ -1,0 +1,63 @@
+name: Build Windows installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      MSKLC_URL: https://download.microsoft.com/download/6/f/5/6f5ce43a-e892-4fd1-b9a6-1a0cbb64e6e2/MSKLC.exe
+      MSKLC_SHA256: CD12A6B08066133DC4AD71BDCACCF1492E3D9A1DE93CF84B7B2824309F0D7255
+    steps:
+      - uses: actions/checkout@v7
+
+      # Only the command-line compiler (kbdutool) and its bundled toolchain are needed, so unpack MSKLC
+      # with an administrative install instead of running its installer.
+      - name: Get MSKLC compiler
+        run: |
+          $exe = "$env:RUNNER_TEMP\MSKLC.exe"
+          Invoke-WebRequest $env:MSKLC_URL -OutFile $exe
+          if ((Get-FileHash $exe -Algorithm SHA256).Hash -ne $env:MSKLC_SHA256) { throw 'MSKLC.exe checksum mismatch' }
+          7z x $exe "-o$env:RUNNER_TEMP\msklc-setup" -y | Out-Null
+          $msi = Get-ChildItem "$env:RUNNER_TEMP\msklc-setup" -Recurse -Filter MSKLC.msi | Select-Object -First 1
+          $p = Start-Process msiexec.exe -Wait -PassThru `
+            -ArgumentList '/a', "`"$($msi.FullName)`"", '/qn', "TARGETDIR=`"$env:RUNNER_TEMP\msklc`""
+          if ($p.ExitCode -ne 0) { throw "msiexec failed with exit code $($p.ExitCode)" }
+          $kbdutool = "$env:RUNNER_TEMP\msklc\bin\i386\kbdutool.exe"
+          if (-not (Test-Path $kbdutool)) { throw "kbdutool.exe not found at $kbdutool" }
+          "KBDUTOOL=$kbdutool" >> $env:GITHUB_ENV
+
+      - name: Compile layout DLLs
+        run: |
+          $targets = [ordered]@{ i386 = '-x'; amd64 = '-m'; wow64 = '-o' }
+          foreach ($t in $targets.GetEnumerator()) {
+            $dir = New-Item -ItemType Directory -Force "build\$($t.Key)"
+            Copy-Item windows\NorKEY.klc $dir
+            Push-Location $dir
+            & $env:KBDUTOOL -u -w $t.Value NorKEY.klc
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) { throw "kbdutool $($t.Value) failed with exit code $code" }
+            if (-not (Test-Path "$dir\NorKEY.dll")) { throw "kbdutool $($t.Value) did not produce NorKEY.dll" }
+          }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        run: |
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup *\ISCC.exe", "$env:ProgramFiles\Inno Setup *\ISCC.exe" `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw 'ISCC.exe not found' }
+          & $iscc.FullName "/DBuildDir=$PWD\build" "/O$PWD\dist" windows\NorKEY.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NorKEY-setup
+          path: dist/NorKEY-setup.exe
+          if-no-files-found: error
