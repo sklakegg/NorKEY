@@ -16,11 +16,11 @@ After the restart go to `System Settings` > `Keyboard` > `Edit` > `+` and search
 
 Windows
 =======
-`windows/NorKEY.klc` is [EurKEY for Windows](https://eurkey.steffen.bruentjen.eu/) 1.3 with the AltGr (right Alt) symbols reduced to Æ, Ø and Å. AltGr+Space gives a non-breaking space and AltGr+` is a dead key for accents.
+`windows/NorKEY.klc` is [EurKEY for Windows](https://eurkey.steffen.bruentjen.eu/) 1.3 with the AltGr (right Alt) symbols reduced to Æ, Ø and Å. AltGr+Space gives a non-breaking space and AltGr+` is a dead key for accents. F16, F17 and F18 also type æ, ø and å (Shift for capitals) without AltGr, for programmable keyboards and apps that treat AltGr as Ctrl+Alt shortcuts, such as World of Warcraft chat. The Mac layout maps the same keys.
 
 Build
 -----
-Windows only loads compiled layouts. To build the installer, open the `Build Windows installer` workflow under `Actions` on GitHub, click `Run workflow`, and download `NorKEY-setup` from the finished run. The workflow compiles `windows/NorKEY.klc` with Microsoft Keyboard Layout Creator and packages it using `windows/NorKEY.iss`.
+Windows only loads compiled layouts. To build the installer, open the `Build Windows installer` workflow under `Actions` on GitHub, click `Run workflow`, and download `NorKEY-setup` from the finished run. The workflow generates C source from `windows/NorKEY.klc` with Microsoft Keyboard Layout Creator, adds the function-key rows from `windows/function-keys.inc` (which the `.klc` format cannot express), compiles it with the same toolchain, and packages it using `windows/NorKEY.iss`.
 
 Install
 -------
