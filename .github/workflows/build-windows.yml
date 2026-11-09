@@ -31,57 +31,18 @@ jobs:
           if (-not (Test-Path $kbdutool)) { throw "kbdutool.exe not found at $kbdutool" }
           "KBDUTOOL=$kbdutool" >> $env:GITHUB_ENV
 
-      # MSKLC cannot put characters on function keys, so generate the C source, add the rows from
-      # windows/function-keys.inc and build with MSKLC's toolchain using the commands kbdutool itself runs.
       - name: Compile layout DLLs
         run: |
-          $bin = Split-Path $env:KBDUTOOL
-          $root = (Resolve-Path "$bin\..\..").Path
-          $rows = Get-Content windows\function-keys.inc -Raw
-          $clFlags = ('-nologo -DNOGDICAPMASKS -DNOWINMESSAGES -DNOWINSTYLES -DNOSYSMETRICS -DNOMENUS -DNOICONS ' +
-            '-DNOSYSCOMMANDS -DNORASTEROPS -DNOSHOWWINDOW -DOEMRESOURCE -DNOATOM -DNOCLIPBOARD -DNOCOLOR -DNOCTLMGR ' +
-            '-DNODRAWTEXT -DNOGDI -DNOKERNEL -DNONLS -DNOMB -DNOMEMMGR -DNOMETAFILE -DNOMINMAX -DNOMSG -DNOOPENFILE ' +
-            '-DNOSCROLL -DNOSERVICE -DNOSOUND -DNOTEXTMETRIC -DNOWINOFFSETS -DNOWH -DNOCOMM -DNOKANJI -DNOHELP ' +
-            '-DNOPROFILER -DNODEFERWINDOWPOS -DNOMCX -DWIN32_LEAN_AND_MEAN -DRoster -DSTD_CALL -D_WIN32_WINNT=0x0500 ' +
-            '/DWINVER=0x0500 -D_WIN32_IE=0x0500 /MD /c /Zp8 /Gy /W3 /WX /Gz /Gm- /EHs-c- /GR- /GF -Z7 /Oxs') -split ' '
-          $rcFlags = ('-r -DSTD_CALL -DCONDITION_HANDLING=1 -DNT_UP=1 -DNT_INST=0 -DWIN32=100 -D_NT1X_=100 -DWINNT=1 ' +
-            '-D_WIN32_WINNT=0x0500 /DWINVER=0x0400 -D_WIN32_IE=0x0400 -DWIN32_LEAN_AND_MEAN=1 -DDEVL=1 -DFPO=1 ' +
-            '-DNDEBUG -l 409') -split ' '
-          $linkFlags = ('-nologo -merge:.edata=.data -merge:.rdata=.data -merge:.text=.data -merge:.bss=.data ' +
-            '-section:.data,re -MERGE:_PAGE=PAGE -MERGE:_TEXT=.text -SECTION:INIT,d -OPT:REF -OPT:ICF ' +
-            '-IGNORE:4039,4078 -noentry -dll -subsystem:native,5.0 -merge:.rdata=.text -PDBPATH:NONE ' +
-            '-STACK:0x40000,0x1000 /opt:nowin98 -osversion:4.0 -version:4.0 /release') -split ' '
-          $targets = [ordered]@{
-            i386  = @{ cl = $bin; machine = '-MACHINE:IX86'; lib = 'i386'; defs = @(); align = $null }
-            amd64 = @{ cl = "$bin\amd64"; machine = '-MACHINE:AMD64'; lib = 'amd64'; defs = @(); align = '0x4000' }
-            wow64 = @{
-              cl = $bin; machine = '-MACHINE:IX86'; lib = 'i386'; defs = '-DBUILD_WOW6432', '-D_WOW6432_'; align = $null
-            }
-          }
-          function Invoke-Tool($exe, $toolArgs) {
-            & $exe @toolArgs
-            if ($LASTEXITCODE -ne 0) { throw "$(Split-Path $exe -Leaf) failed with exit code $LASTEXITCODE" }
-          }
+          $targets = [ordered]@{ i386 = '-x'; amd64 = '-m'; wow64 = '-o' }
           foreach ($t in $targets.GetEnumerator()) {
             $dir = New-Item -ItemType Directory -Force "build\$($t.Key)"
-            $o = $t.Value
             Copy-Item windows\NorKEY.klc $dir
             Push-Location $dir
-            try {
-              Invoke-Tool $env:KBDUTOOL '-u', '-w', '-s', 'NorKEY.klc'
-              $c = Join-Path $dir.FullName 'NorKEY.c'
-              $reader = [IO.StreamReader]::new($c, $true)
-              $src = $reader.ReadToEnd(); $enc = $reader.CurrentEncoding; $reader.Close()
-              $table = [regex]'(?m)^.*\baVkToWch2\[\]\s*=\s*\{[^\r\n]*\r?\n'
-              if ($table.Matches($src).Count -ne 1) { throw 'aVkToWch2 table not found in generated NorKEY.c' }
-              [IO.File]::WriteAllText($c, $table.Replace($src, { $args[0].Value + $rows }, 1), $enc)
-              Invoke-Tool "$($o.cl)\cl.exe" ($clFlags + "-I$root\inc" + $o.defs + 'NorKEY.c')
-              Invoke-Tool "$bin\rc.exe" ($rcFlags + "-i$root\inc" + 'NorKEY.rc')
-              $env:SECTION_ALIGNMENT = $o.align
-              Invoke-Tool "$bin\link.exe" ($linkFlags + $o.machine + "-libpath:$root\lib\$($o.lib)" +
-                '-def:NorKEY.def' + 'NorKEY.res' + 'NorKEY.obj')
-            } finally { Pop-Location }
-            if (-not (Test-Path "$dir\NorKEY.dll")) { throw "$($t.Key) build did not produce NorKEY.dll" }
+            & $env:KBDUTOOL -u -w $t.Value NorKEY.klc
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) { throw "kbdutool $($t.Value) failed with exit code $code" }
+            if (-not (Test-Path "$dir\NorKEY.dll")) { throw "kbdutool $($t.Value) did not produce NorKEY.dll" }
           }
 
       - name: Install Inno Setup
