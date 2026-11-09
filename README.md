@@ -1,11 +1,10 @@
 # NorKEY
 A keyboard layout for Norwegian coders and translators on macOS and Windows.
-The Mac layout is a Norwegian version of [EurKEY-Mac](https://github.com/jonasdiemer/EurKEY-Mac).
-It only includes Æ, Ø and Å of the special symbols in the original layout - making it less error prone to typos for Norwegian users.
+It is a US layout plus Æ, Ø and Å, stripped down from [EurKEY-Mac](https://github.com/jonasdiemer/EurKEY-Mac) and [EurKEY for Windows](https://eurkey.steffen.bruentjen.eu/) 1.3. Option and AltGr add no characters.
 
 Æ, Ø and Å
 =======
-Both layouts type å, ø and æ (Shift for capitals) on the Japanese/Brazilian extra keys International 1, International 3 and Keypad Comma, not with AltGr/Option. Normal keyboards lack these keys, so NorKEY is meant for programmable keyboards that can send them. Unlike AltGr, they carry no modifier that apps can read as a shortcut; World of Warcraft chat reads AltGr+W as Ctrl+W and deletes the previous word.
+Both layouts type å, ø and æ (Shift for capitals) on the Japanese/Brazilian extra keys International 1, International 3 and Keypad Comma. Normal keyboards lack these keys, so NorKEY is meant for programmable keyboards that can send them. Unlike AltGr, they carry no modifier that apps can read as a shortcut; World of Warcraft chat reads AltGr+W as Ctrl+W and deletes the previous word.
 
 Mac
 =======
@@ -20,7 +19,6 @@ After the restart go to `System Settings` > `Keyboard` > `Edit` > `+` and search
 
 Windows
 =======
-`windows/NorKEY.klc` is [EurKEY for Windows](https://eurkey.steffen.bruentjen.eu/) 1.3 with the AltGr (right Alt) letters removed. AltGr+Space gives a non-breaking space and AltGr+` is a dead key for accents.
 
 Build
 -----
